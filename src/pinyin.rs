@@ -1,14 +1,17 @@
-use phf::{phf_map, phf_set};
+use phf::phf_set;
 use std::char;
-use std::collections::{HashMap, HashSet};
-use std::sync::LazyLock;
+use std::collections::HashSet;
+
+include!(concat!(env!("OUT_DIR"), "/pinyin_data.rs"));
 
 /// 通过字符获取拼音
-pub fn get_pinyin(ch: &char) -> Option<&[String]> {
-    let Some(pinyin) = PINYIN_DIRT.get(&ch) else {
-        return None;
-    };
-    Some(&pinyin[..])
+pub fn get_pinyin(ch: &char) -> Option<Vec<String>> {
+    let pinyin = PINYIN_DIRT.get(ch)?;
+    let result = pinyin
+        .split(",")
+        .map(str::to_owned)
+        .collect::<Vec<String>>();
+    Some(result)
 }
 
 /// 获取这个拼音字符串中全部拼音组合，包含原始输入、全部字母组合、全部合法拼音组合
@@ -85,65 +88,6 @@ fn split_pinyin_with_index(input: &str, begin: usize, end: usize) -> Vec<String>
     result
 }
 
-/// 汉字码点和拼音的映射表
-static DEFAULT_PINYIN_DATA: &'static str = include_str!("data/pinyin.txt");
-
-/// 借助汉字码点和拼音的映射表，在运行时构建一个 char 与拼音映射的全局字典
-static PINYIN_DIRT: LazyLock<HashMap<char, Vec<String>>> = LazyLock::new(|| {
-    let mut dirt = HashMap::<char, Vec<String>>::new();
-    for line in DEFAULT_PINYIN_DATA.split("\n").into_iter() {
-        if line.is_empty() || line.starts_with("#") {
-            continue;
-        }
-        // 第一个是码点，第二个是拼音集合
-        let mut codepoint_and_pinyin = line.split(": ");
-        let codepoint = if let Some(codepoint) = codepoint_and_pinyin.next() {
-            char::from_u32(u32::from_str_radix(&codepoint[2..], 16).unwrap()).unwrap()
-        } else {
-            char::default()
-        };
-        let pinyin_vec = if let Some(pinyin) = codepoint_and_pinyin.next() {
-            to_plain(pinyin)
-        } else {
-            Vec::default()
-        };
-        dirt.insert(codepoint, pinyin_vec);
-    }
-    dirt
-});
-
-/// 将拼音中带有声调的韵母转换为不带声调的韵母
-fn to_plain(input: &str) -> Vec<String> {
-    let value = input
-        .chars()
-        .map(|ch| {
-            if let Some(char) = TONE_TO_PLAIN.get(&ch) {
-                char.to_owned()
-            } else {
-                ch
-            }
-        })
-        .collect::<String>();
-    let mut value = value.split(",").map(str::to_owned).collect::<Vec<String>>();
-    // 排序
-    value.sort();
-    // 去重
-    value.dedup();
-    value
-}
-
-/// 带声调的韵母和和不带声调的韵母的映射
-static TONE_TO_PLAIN: phf::Map<char, char> = phf_map! {
-    'ā'=>'a', 'á'=>'a', 'ǎ'=>'a', 'à'=>'a',
-    'ē'=>'e', 'é'=>'e', 'ě'=>'e', 'è'=>'e', 'ế'=>'e', 'ề'=>'e', 'ê'=>'e',
-    'ō'=>'o', 'ó'=>'o', 'ǒ'=>'o', 'ò'=>'o',
-    'ī'=>'i', 'í'=>'i', 'ǐ'=>'i', 'ì'=>'i',
-    'ū'=>'u', 'ú'=>'u', 'ǔ'=>'u', 'ù'=>'u',
-    'ǘ'=>'u', 'ǚ'=>'u', 'ǜ'=>'u', 'ü'=>'u',
-    'ń'=>'n', 'ň'=>'n', 'ǹ'=>'n',
-    'ḿ'=>'m',
-};
-
 /// 不是合法拼音，但可以是拼音前缀，只能出现在将拼音分割成拼音组合的结尾
 static PINYIN_PREFIX: phf::Set<&'static str> = phf_set! {
     "be","bia",
@@ -206,28 +150,21 @@ mod tests {
     fn test_pinyin_dirt() {
         let ch = '中';
         let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(Some(&vec!["zhong".to_owned()]), pinyin);
+        assert_eq!(Some(&"zhong"), pinyin);
         let ch = '说';
         let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(
-            Some(&vec![
-                "shui".to_owned(),
-                "shuo".to_owned(),
-                "yue".to_owned()
-            ]),
-            pinyin
-        );
+        assert_eq!(Some(&"shui,shuo,yue"), pinyin);
     }
 
     #[test]
     fn test_get_pinyin() {
         let ch = '中';
         let pinyin = get_pinyin(&ch);
-        assert_eq!(Some(&vec!["zhong".to_owned()][..]), pinyin);
+        assert_eq!(Some(vec!["zhong".to_owned()]), pinyin);
         let ch = '说';
         let pinyin = get_pinyin(&ch);
         assert_eq!(
-            Some(&vec!["shui".to_owned(), "shuo".to_owned(), "yue".to_owned()][..]),
+            Some(vec!["shui".to_owned(), "shuo".to_owned(), "yue".to_owned()]),
             pinyin
         );
     }

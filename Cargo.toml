@@ -1,7 +1,17 @@
+[workspace]
+resolver = "3"
+
+[workspace.dependencies]
+phf = { version = "0.12", default-features = false, features = ["macros"] }
+
 [package]
 name = "sqlite-simple-tokenizer"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-phf = { version = "0.12.1", features = ["macros"] }
+phf = { workspace = true }
+
+[build-dependencies]
+phf = { workspace = true }
+phf_codegen = "0.12"
