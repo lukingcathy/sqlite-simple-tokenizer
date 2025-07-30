@@ -114,22 +114,22 @@ static PINYIN_DIRT: LazyLock<HashMap<char, Vec<String>>> = LazyLock::new(|| {
 
 /// 将拼音中带有声调的韵母转换为不带声调的韵母
 fn to_plain(input: &str) -> Vec<String> {
-    let mut pinyin_set = HashSet::new();
-    let mut value = String::new();
-    for char in input.chars() {
-        if char == ',' {
-            let str = value.clone();
-            pinyin_set.insert(str);
-            value.clear();
-            continue;
-        }
-        if let Some(ch) = TONE_TO_PLAIN.get(&char) {
-            value.push(*ch)
-        } else {
-            value.push(char)
-        }
-    }
-    pinyin_set.into_iter().collect()
+    let value = input
+        .chars()
+        .map(|ch| {
+            if let Some(char) = TONE_TO_PLAIN.get(&ch) {
+                char.to_owned()
+            } else {
+                ch
+            }
+        })
+        .collect::<String>();
+    let mut value = value.split(",").map(str::to_owned).collect::<Vec<String>>();
+    // 排序
+    value.sort();
+    // 去重
+    value.dedup();
+    value
 }
 
 /// 带声调的韵母和和不带声调的韵母的映射
@@ -209,7 +209,14 @@ mod tests {
         assert_eq!(Some(&vec!["zhong".to_owned()]), pinyin);
         let ch = '说';
         let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(Some(&vec!["shui".to_owned(), "shuo".to_owned()]), pinyin);
+        assert_eq!(
+            Some(&vec![
+                "shui".to_owned(),
+                "shuo".to_owned(),
+                "yue".to_owned()
+            ]),
+            pinyin
+        );
     }
 
     #[test]
@@ -220,7 +227,7 @@ mod tests {
         let ch = '说';
         let pinyin = get_pinyin(&ch);
         assert_eq!(
-            Some(&vec!["shuo".to_owned(), "shui".to_owned()][..]),
+            Some(&vec!["shui".to_owned(), "shuo".to_owned(), "yue".to_owned()][..]),
             pinyin
         );
     }
