@@ -11,12 +11,14 @@ pub fn get_pinyin(ch: &char) -> Option<&[String]> {
     Some(&pinyin[..])
 }
 
-/// 分割拼音串
-/// 如果提供空串、一个字符的拼音串、超过 20 个字符的拼音串均不处理，原样返回
+/// 获取这个拼音字符串中全部拼音组合，包含原始输入、全部字母组合、全部合法拼音组合
+///
+/// 如果提供空串、一个字母的拼音串、超过 20 个字符的拼音串均不处理，原样返回
 ///
 /// 例如
-/// - `ba` 得到 {"ba", "b+a"}
-/// - "zhangliangying` 得到  `{"zhangliangying", "zhang+li+ang+yin+g", "zhang+li+ang+ying", "zhang+liang+yin+g", "zhang+liang+ying", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
+/// - `ba` 得到 `{"ba", "b+a"}`
+/// - `zhuang` 得到 `{"zhuang", "z+h+u+a+n+g", "zhu+ang", "zhu+an+g", "zhuan+g"}`
+/// - `zhangliangying` 得到  `{"zhangliangying", "zhang+li+ang+yin+g", "zhang+li+ang+ying", "zhang+liang+yin+g", "zhang+liang+ying", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
 /// - `zhangliangy` 得到  `{"zhangliangy", "zhang+li+ang+y", "zhang+liang+y", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
 pub fn split_pinyin(input: &str) -> HashSet<String> {
     let len = input.len();
@@ -46,27 +48,35 @@ pub fn split_pinyin(input: &str) -> HashSet<String> {
     }
 }
 
-/// 分割拼音
+/// 用于获取这个拼音字符串中全部拼音组合
+///
+/// 在列举拼音组合时，前面都需要考虑符合完整的拼音，最后一个字母可以只考虑是否是某个拼音的前缀。
 fn split_pinyin_with_index(input: &str, begin: usize, end: usize) -> Vec<String> {
     if begin >= end {
         return Vec::new();
     }
     if begin == end - 1 {
+        // 只有一个字符的时候，将这个字符返回
         return vec![input[begin..end].to_owned()];
     }
     let mut result = Vec::<String>::new();
     let full_str = &input[begin..end];
     if PINYIN_PREFIX.contains(full_str) || PINYIN_VALID.contains(full_str) {
+        // 整个字符串是合法的拼音，那么保存到结果中
         result.push(full_str.to_owned());
     }
     let mut start = begin + 1;
     while start < end {
         let first = &input[begin..start];
         if !PINYIN_VALID.contains(first) {
+            // 当前子串不是合法拼音，调整索引，往当前子串添加一个新字符
             start += 1;
             continue;
         }
+        // 找到第一个拼音，后将剩余的子串继续分割
         let tmp = split_pinyin_with_index(input, start, end);
+        // 只有剩余的子串中有合法拼音，那么这个拼音有效
+        // 如果剩余的子串没有合法拼音，那么这个拼音和后续的字符才是一个比较完整的拼音，将跳过这个拼音
         for s in tmp {
             result.push(format!("{first}+{s}"));
         }
@@ -134,7 +144,7 @@ static TONE_TO_PLAIN: phf::Map<char, char> = phf_map! {
     'ḿ'=>'m',
 };
 
-/// 不是合法拼音，但可以是前缀，只能出现在结尾
+/// 不是合法拼音，但可以是拼音前缀，只能出现在将拼音分割成拼音组合的结尾
 static PINYIN_PREFIX: phf::Set<&'static str> = phf_set! {
     "be","bia",
     "ch","cho","chon","chua","co","con","cua",
@@ -199,7 +209,7 @@ mod tests {
         assert_eq!(Some(&vec!["zhong".to_owned()]), pinyin);
         let ch = '说';
         let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(Some(&vec!["shuo".to_owned(), "shui".to_owned()]), pinyin);
+        assert_eq!(Some(&vec!["shui".to_owned(), "shuo".to_owned()]), pinyin);
     }
 
     #[test]
@@ -226,13 +236,24 @@ mod tests {
             HashSet::from(["ba".to_owned(), "b+a".to_owned()]),
             split_pinyin(input)
         );
+        let input = "zhuang";
+        assert_eq!(
+            HashSet::from([
+                "z+h+u+a+n+g".to_owned(),
+                "zhuang".to_owned(),
+                "zhuan+g".to_owned(),
+                "zhu+ang".to_owned(),
+                "zhu+an+g".to_owned(),
+            ]),
+            split_pinyin(input)
+        );
         let input = "zhangliangy";
         assert_eq!(
             HashSet::from([
+                "z+h+a+n+g+l+i+a+n+g+y".to_owned(),
                 "zhangliangy".to_owned(),
                 "zhang+li+ang+y".to_owned(),
                 "zhang+liang+y".to_owned(),
-                "z+h+a+n+g+l+i+a+n+g+y".to_owned()
             ]),
             split_pinyin(input)
         );
