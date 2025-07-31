@@ -1,1 +1,1 @@
-mod pinyin;
+pub mod pinyin;
