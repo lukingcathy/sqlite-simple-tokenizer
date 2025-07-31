@@ -4,13 +4,34 @@ resolver = "3"
 [workspace.dependencies]
 phf = { version = "0.12", default-features = false, features = ["macros"] }
 
-[package]
-name = "sqlite-simple-tokenizer"
+[workspace.package]
+authors = ["Cathy Luking <cathyluking@foxmail.com>"]
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[package]
+name = "sqlite-simple-tokenizer"
+description = "This's a run-time loadable extension of SQLite fts5, supports Chinese and pinyin word segmentation and search."
+keywords = ["SQLite", "Extension", "Chinese", "Pinyin", "Tokenizer"]
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "sqlite_simple_tokenizer"
+
+[features]
+defualt = []
+build_extension = ["rusqlite/loadable_extension"]
 
 [dependencies]
+anyhow = "1.0.98"
+env_logger = "0.11.8"
 phf = { workspace = true }
+log = "0.4.27"
+rusqlite = { version = "0.37.0", default-features = false, features = ["bundled", "functions", "vtab", "array"] }
 
 [build-dependencies]
 phf = { workspace = true }
