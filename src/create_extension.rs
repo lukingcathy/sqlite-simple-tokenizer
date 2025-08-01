@@ -1,3 +1,4 @@
+use log::{error, info};
 use rusqlite::Connection;
 use rusqlite::ffi::{sqlite3, sqlite3_api_routines};
 use std::ffi::{c_char, c_int};
@@ -12,5 +13,15 @@ pub extern "C" fn sqlite3_sqlitesimpletokenizer_init(
 }
 
 fn init(db: Connection) -> rusqlite::Result<bool> {
-    todo!()
+    // 调用 load 函数，以加载拓展函数
+    match crate::load(&db) {
+        Ok(()) => {
+            info!("[sqlite-simple-tokenizer] initialized");
+            Ok(false)
+        }
+        Err(error) => {
+            error!("[sqlite-simple-tokenizer] initialization failed: {error:?}");
+            Err(rusqlite::Error::ModuleError(format!("{error:?}")))
+        }
+    }
 }
