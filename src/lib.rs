@@ -2,7 +2,7 @@ mod add_function;
 #[cfg(feature = "build_extension")]
 mod create_extension;
 pub mod pinyin;
-mod tokenizer;
+pub mod tokenizer;
 mod utils;
 
 use add_function::create_scalar_functions;
