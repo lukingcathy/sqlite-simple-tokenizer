@@ -1,3 +1,6 @@
+// 代码来自 https://gist.github.com/ColonelThirtyTwo/3dd1fe04e4cff0502fa70d12f3a6e72e/revisions
+// 针对 Rust 和 ruqlite 的新版本做了一些调整
+
 use rusqlite::Connection;
 use rusqlite::ffi::{
     FTS5_TOKEN_COLOCATED, FTS5_TOKENIZE_AUX, FTS5_TOKENIZE_DOCUMENT, FTS5_TOKENIZE_PREFIX,
