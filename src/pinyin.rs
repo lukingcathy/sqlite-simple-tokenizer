@@ -149,22 +149,22 @@ mod tests {
     #[test]
     fn test_pinyin_dirt() {
         let ch = '中';
-        let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(Some(&"zhong"), pinyin);
+        let pinyin = *PINYIN_DIRT.get(&ch).unwrap();
+        assert_eq!("zhong", pinyin);
         let ch = '说';
-        let pinyin = PINYIN_DIRT.get(&ch);
-        assert_eq!(Some(&"shui,shuo,yue"), pinyin);
+        let pinyin = *PINYIN_DIRT.get(&ch).unwrap();
+        assert_eq!("shui,shuo,yue", pinyin);
     }
 
     #[test]
     fn test_get_pinyin() {
         let ch = '中';
-        let pinyin = get_pinyin(&ch);
-        assert_eq!(Some(vec!["zhong".to_owned()]), pinyin);
+        let pinyin = get_pinyin(&ch).unwrap();
+        assert_eq!(vec!["zhong".to_owned()], pinyin);
         let ch = '说';
-        let pinyin = get_pinyin(&ch);
+        let pinyin = get_pinyin(&ch).unwrap();
         assert_eq!(
-            Some(vec!["shui".to_owned(), "shuo".to_owned(), "yue".to_owned()]),
+            vec!["shui".to_owned(), "shuo".to_owned(), "yue".to_owned()],
             pinyin
         );
     }
