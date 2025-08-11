@@ -5,6 +5,8 @@ pub mod pinyin;
 pub mod tokenizer;
 mod utils;
 
+include!(concat!(env!("OUT_DIR"), "/stopword_data.rs"));
+
 use add_function::create_scalar_functions;
 use log::LevelFilter;
 use rusqlite::Connection;

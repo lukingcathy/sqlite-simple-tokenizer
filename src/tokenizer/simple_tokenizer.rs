@@ -1,3 +1,4 @@
+use crate::STOPWORD;
 use crate::pinyin::get_pinyin;
 use crate::tokenizer::{
     TokenizeReason, Tokenizer,
@@ -15,35 +16,6 @@ static EN_STEMMER: LazyLock<Stemmer> = LazyLock::new(|| Stemmer::create(Algorith
 pub struct SimpleTokenizer {
     /// 是否支持拼音，默认支持拼音
     enable_pinyin: bool,
-}
-
-/// Token 类型
-enum TokenCategory {
-    /// ASCII 中的空字符或者控制字符
-    Space,
-    /// ASCII 中的字母
-    AsciiAlphabetic,
-    /// ASCII 中的数字
-    AsciiDigit,
-    /// 非 ASCII 字符
-    NotAscii,
-}
-
-impl From<&char> for TokenCategory {
-    fn from(value: &char) -> Self {
-        if value.is_ascii() {
-            if value.is_ascii_control() || value.is_ascii_whitespace() {
-                return Self::Space;
-            }
-            if value.is_ascii_alphabetic() {
-                return Self::AsciiAlphabetic;
-            }
-            if value.is_ascii_digit() {
-                return Self::AsciiDigit;
-            }
-        }
-        Self::NotAscii
-    }
 }
 
 impl Default for SimpleTokenizer {
@@ -91,6 +63,10 @@ impl Tokenizer for SimpleTokenizer {
         for (index, word) in text.unicode_word_indices() {
             let range = index..index + word.len();
             if need_pinyin(word) && self.enable_pinyin && reason == TokenizeReason::Document {
+                if STOPWORD.contains(word) {
+                    // 不处理停词
+                    continue;
+                }
                 if let Some(ch) = word.chars().next()
                     && let Some(pinyin_vec) = get_pinyin(&ch)
                 {
@@ -102,6 +78,10 @@ impl Tokenizer for SimpleTokenizer {
                 // 不需要使用 pinyin 模块进行处理
                 // 对单词做归一化处理，并且将单词转换成小写
                 let need_stem = make_lowercase(word, &mut word_buf);
+                if STOPWORD.contains(word_buf.as_str()) {
+                    // 不处理停词
+                    continue;
+                }
                 if need_stem {
                     let stemmed = EN_STEMMER.stem(word_buf.as_str()).to_string();
                     (push_token)(stemmed.as_bytes(), range, false)?;
