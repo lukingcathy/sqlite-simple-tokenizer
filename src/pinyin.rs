@@ -4,6 +4,11 @@ use std::collections::HashSet;
 
 include!(concat!(env!("OUT_DIR"), "/pinyin_data.rs"));
 
+/// 通过给定的字符，判断是否有拼音
+pub fn has_pinyin(ch: &char) -> bool {
+    PINYIN_DIRT.contains_key(ch)
+}
+
 /// 通过字符获取拼音
 pub fn get_pinyin(ch: &char) -> Option<Vec<String>> {
     let pinyin = PINYIN_DIRT.get(ch)?;

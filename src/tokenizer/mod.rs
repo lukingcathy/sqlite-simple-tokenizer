@@ -1,6 +1,10 @@
 // 代码来自 https://gist.github.com/ColonelThirtyTwo/3dd1fe04e4cff0502fa70d12f3a6e72e/revisions
 // 针对 Rust 和 ruqlite 的新版本做了一些调整
 
+pub mod jieba_tokenizer;
+pub mod simple_tokenizer;
+mod utils;
+
 use rusqlite::Connection;
 use rusqlite::ffi::{
     FTS5_TOKEN_COLOCATED, FTS5_TOKENIZE_AUX, FTS5_TOKENIZE_DOCUMENT, FTS5_TOKENIZE_PREFIX,
@@ -16,6 +20,7 @@ use std::panic::AssertUnwindSafe;
 const FTS5_API_VERSION: c_int = 3;
 
 /// FTS5 请求对所提供的文本进行标记化的原因
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TokenizeReason {
     /// 往 FTS 表中插入或者删除文档
     Document,
@@ -66,7 +71,10 @@ pub trait Tokenizer: Sized + Send + 'static {
     /// 一个全局数据的类型
     type Global: Send + 'static;
     /// 创建 Tokenizer 方法
+    ///
     /// 在创建 Tokenizer 实例后，通过指定的全局数据访问这个实例
+    ///
+    /// 在 xCreate 中被调用，xCreate 的 azArg 参数转换成 Vec<String>，并以此提供给 new方法使用
     fn new(global: &Self::Global, args: Vec<String>) -> Result<Self, rusqlite::Error>;
     /// 分词的具体实现
     ///
@@ -91,7 +99,7 @@ unsafe extern "C" fn x_create<T: Tokenizer>(
     global: *mut c_void,
     args: *mut *const c_char,
     nargs: c_int,
-    out_tok: *mut *mut Fts5Tokenizer,
+    out_tokenizer: *mut *mut Fts5Tokenizer,
 ) -> c_int {
     let global = unsafe { &*global.cast::<T::Global>() };
     let args = (0..nargs as usize)
@@ -103,7 +111,7 @@ unsafe extern "C" fn x_create<T: Tokenizer>(
         Ok(Ok(v)) => {
             let bp = Box::into_raw(Box::new(v));
             unsafe {
-                *out_tok = bp.cast::<Fts5Tokenizer>();
+                *out_tokenizer = bp.cast::<Fts5Tokenizer>();
             }
             SQLITE_OK
         }

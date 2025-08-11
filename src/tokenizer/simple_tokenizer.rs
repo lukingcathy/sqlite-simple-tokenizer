@@ -1,0 +1,157 @@
+use crate::pinyin::get_pinyin;
+use crate::tokenizer::{
+    TokenizeReason, Tokenizer,
+    utils::{make_lowercase, need_pinyin},
+};
+use rusqlite::Error;
+use rust_stemmers::{Algorithm, Stemmer};
+use std::{ops::Range, sync::LazyLock};
+use unicode_segmentation::UnicodeSegmentation;
+
+/// 适用于英语的词干提取器
+static EN_STEMMER: LazyLock<Stemmer> = LazyLock::new(|| Stemmer::create(Algorithm::English));
+
+/// 适用于拼音和中文的分词器
+pub struct SimpleTokenizer {
+    /// 是否支持拼音，默认支持拼音
+    enable_pinyin: bool,
+}
+
+/// Token 类型
+enum TokenCategory {
+    /// ASCII 中的空字符或者控制字符
+    Space,
+    /// ASCII 中的字母
+    AsciiAlphabetic,
+    /// ASCII 中的数字
+    AsciiDigit,
+    /// 非 ASCII 字符
+    NotAscii,
+}
+
+impl From<&char> for TokenCategory {
+    fn from(value: &char) -> Self {
+        if value.is_ascii() {
+            if value.is_ascii_control() || value.is_ascii_whitespace() {
+                return Self::Space;
+            }
+            if value.is_ascii_alphabetic() {
+                return Self::AsciiAlphabetic;
+            }
+            if value.is_ascii_digit() {
+                return Self::AsciiDigit;
+            }
+        }
+        Self::NotAscii
+    }
+}
+
+impl Default for SimpleTokenizer {
+    fn default() -> Self {
+        Self {
+            enable_pinyin: true,
+        }
+    }
+}
+
+impl SimpleTokenizer {
+    /// 关闭拼音支持
+    pub fn disable_pinyin(&mut self) {
+        self.enable_pinyin = false;
+    }
+}
+
+impl Tokenizer for SimpleTokenizer {
+    type Global = ();
+
+    fn new(&(): &Self::Global, args: Vec<String>) -> Result<Self, Error> {
+        let mut tokenizer = Self::default();
+        // 允许传入 0 值，表示不需要支持拼音
+        if let Some(flag) = args.first()
+            && let Ok(flag) = flag.parse::<i32>()
+            && flag == 0
+        {
+            tokenizer.disable_pinyin()
+        };
+        Ok(tokenizer)
+    }
+
+    fn tokenize<TKF>(
+        &mut self,
+        reason: TokenizeReason,
+        text: &[u8],
+        mut push_token: TKF,
+    ) -> Result<(), Error>
+    where
+        TKF: FnMut(&[u8], Range<usize>, bool) -> Result<(), Error>,
+    {
+        let text = String::from_utf8_lossy(text);
+        // 使用 unicode_word_indices 进行分词，所有中文字符应该是单独一个字符成 word
+        let mut word_buf = String::new();
+        for (index, word) in text.unicode_word_indices() {
+            let range = index..index + word.len();
+            if need_pinyin(word) && self.enable_pinyin && reason == TokenizeReason::Document {
+                if let Some(ch) = word.chars().next()
+                    && let Some(pinyin_vec) = get_pinyin(&ch)
+                {
+                    for pinyin in pinyin_vec {
+                        (push_token)(pinyin.as_bytes(), range.clone(), false)?;
+                    }
+                }
+            } else {
+                // 不需要使用 pinyin 模块进行处理
+                // 对单词做归一化处理，并且将单词转换成小写
+                let need_stem = make_lowercase(word, &mut word_buf);
+                if need_stem {
+                    let stemmed = EN_STEMMER.stem(word_buf.as_str()).to_string();
+                    (push_token)(stemmed.as_bytes(), range, false)?;
+                } else {
+                    (push_token)(word_buf.as_bytes(), range, false)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use unicode_segmentation::UnicodeSegmentation;
+
+    #[test]
+    fn test_unicode_word_indices() {
+        let text = "The quick (\"brown\") fox can't jump 32.3 feet, right? 我将点燃星海！天上的stars全部都是 eye，不要凝视";
+        let uwi1 = text.unicode_word_indices().collect::<Vec<(usize, &str)>>();
+        let b: &[_] = &[
+            (0, "The"),
+            (4, "quick"),
+            (12, "brown"),
+            (20, "fox"),
+            (24, "can't"),
+            (30, "jump"),
+            (35, "32.3"),
+            (40, "feet"),
+            (46, "right"),
+            (53, "我"),
+            (56, "将"),
+            (59, "点"),
+            (62, "燃"),
+            (65, "星"),
+            (68, "海"),
+            (74, "天"),
+            (77, "上"),
+            (80, "的"),
+            (83, "stars"),
+            (88, "全"),
+            (91, "部"),
+            (94, "都"),
+            (97, "是"),
+            (101, "eye"),
+            (107, "不"),
+            (110, "要"),
+            (113, "凝"),
+            (116, "视"),
+        ];
+        assert_eq!(&uwi1[..], b);
+    }
+}

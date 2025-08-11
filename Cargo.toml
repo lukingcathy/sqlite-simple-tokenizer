@@ -32,6 +32,10 @@ env_logger = "0.11.8"
 phf = { workspace = true }
 log = "0.4.27"
 rusqlite = { version = "0.37.0", default-features = false, features = ["bundled", "functions", "vtab", "array"] }
+unicode-segmentation = "1.12.0"
+unicode-normalization = "0.1.24"
+jieba-rs = { git = "https://github.com/messense/jieba-rs.git" }
+rust-stemmers = "1.2.0"
 
 [build-dependencies]
 phf = { workspace = true }
