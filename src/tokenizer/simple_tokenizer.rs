@@ -2,15 +2,11 @@ use crate::STOPWORD;
 use crate::pinyin::get_pinyin;
 use crate::tokenizer::{
     TokenizeReason, Tokenizer,
-    utils::{make_lowercase, need_pinyin},
+    utils::{EN_STEMMER, make_lowercase, need_pinyin},
 };
 use rusqlite::Error;
-use rust_stemmers::{Algorithm, Stemmer};
-use std::{ops::Range, sync::LazyLock};
+use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
-
-/// 适用于英语的词干提取器
-static EN_STEMMER: LazyLock<Stemmer> = LazyLock::new(|| Stemmer::create(Algorithm::English));
 
 /// 适用于拼音和中文的分词器
 pub struct SimpleTokenizer {

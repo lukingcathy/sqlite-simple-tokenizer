@@ -1,6 +1,25 @@
 use crate::pinyin::has_pinyin;
+use rust_stemmers::{Algorithm, Stemmer};
+use std::sync::LazyLock;
 use unicode_normalization::UnicodeNormalization;
 
+/// 适用于英语的词干提取器
+pub(super) static EN_STEMMER: LazyLock<Stemmer> =
+    LazyLock::new(|| Stemmer::create(Algorithm::English));
+
+/// 判断是不是空字符，或者是控制字符组成的字符串
+pub(super) fn is_space_str(word: &str) -> bool {
+    let mut is_space = true;
+    for ch in word.chars() {
+        if !ch.is_whitespace() && !ch.is_control() {
+            is_space = false;
+            break;
+        }
+    }
+    is_space
+}
+
+/// 判断这个单词是否需要使用 pinyin 模块进行处理
 pub(super) fn need_pinyin(word: &str) -> bool {
     if word.is_empty() || word.len() > 1 {
         // 空串，或者长度大于 1 的单词，不需要 pinyin 处理
