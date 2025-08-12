@@ -8,6 +8,8 @@ use rusqlite::Error;
 use std::ops::Range;
 use std::sync::LazyLock;
 
+pub static NAME: &str = "jieba";
+
 static JIEBA: LazyLock<Jieba> = LazyLock::new(Jieba::new);
 
 /// 使用 jieba 分词器

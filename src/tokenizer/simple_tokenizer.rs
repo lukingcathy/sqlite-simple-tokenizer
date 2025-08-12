@@ -8,6 +8,8 @@ use rusqlite::Error;
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
 
+pub static NAME: &str = "simple";
+
 /// 适用于拼音和中文的分词器
 pub struct SimpleTokenizer {
     /// 是否支持拼音，默认支持拼音
