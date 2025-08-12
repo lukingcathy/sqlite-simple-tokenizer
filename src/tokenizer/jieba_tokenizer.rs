@@ -5,10 +5,9 @@ use crate::tokenizer::{
 };
 use jieba_rs::Jieba;
 use rusqlite::Error;
+use std::ffi::CStr;
 use std::ops::Range;
 use std::sync::LazyLock;
-
-pub static NAME: &str = "jieba";
 
 static JIEBA: LazyLock<Jieba> = LazyLock::new(Jieba::new);
 
@@ -17,6 +16,10 @@ pub struct JiebaTokenizer;
 
 impl Tokenizer for JiebaTokenizer {
     type Global = ();
+
+    fn name() -> &'static CStr {
+        c"jieba"
+    }
 
     fn new(&(): &Self::Global, _args: Vec<String>) -> Result<Self, Error> {
         Ok(Self)
@@ -61,13 +64,12 @@ impl Tokenizer for JiebaTokenizer {
 
 #[cfg(test)]
 mod tests {
-    use jieba_rs::Jieba;
+    use super::JIEBA;
 
     #[test]
     fn test_jieba_cut() {
-        let jieba = Jieba::new();
         let text = "The quick (\"brown\") fox can't jump 32.3 feet, right? 我将点燃星海！天上的stars全部都是 eye，不要凝视";
-        let words = jieba.cut(text, false);
+        let words = JIEBA.cut(text, false);
         let vec = vec![
             "The",
             " ",
@@ -113,7 +115,7 @@ mod tests {
             "凝视",
         ];
         assert_eq!(words, vec);
-        let words = jieba.cut(text, true);
+        let words = JIEBA.cut(text, true);
         let vec = vec![
             "The",
             " ",

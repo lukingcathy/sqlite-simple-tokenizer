@@ -5,10 +5,9 @@ use crate::tokenizer::{
     utils::{EN_STEMMER, make_lowercase, need_pinyin},
 };
 use rusqlite::Error;
+use std::ffi::CStr;
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
-
-pub static NAME: &str = "simple";
 
 /// 适用于拼音和中文的分词器
 pub struct SimpleTokenizer {
@@ -33,6 +32,10 @@ impl SimpleTokenizer {
 
 impl Tokenizer for SimpleTokenizer {
     type Global = ();
+
+    fn name() -> &'static CStr {
+        c"simple"
+    }
 
     fn new(&(): &Self::Global, args: Vec<String>) -> Result<Self, Error> {
         let mut tokenizer = Self::default();

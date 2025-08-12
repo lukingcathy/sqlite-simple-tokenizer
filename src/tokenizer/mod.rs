@@ -70,6 +70,8 @@ impl TryFrom<c_int> for TokenizeReason {
 pub trait Tokenizer: Sized + Send + 'static {
     /// 一个全局数据的类型
     type Global: Send + 'static;
+    /// 提供一个 tokenizer 名称
+    fn name() -> &'static CStr;
     /// 创建 Tokenizer 方法
     ///
     /// 在创建 Tokenizer 实例后，通过指定的全局数据访问这个实例
@@ -244,7 +246,6 @@ fn panic_err_to_str(msg: &Box<dyn std::any::Any + Send>) -> &str {
 pub enum RegisterTokenizerError {
     SelectFts5Failed,
     Fts5ApiNul,
-    UnrecognizedName(NulError),
     Fts5xCreateTokenizerV2Nul,
     Fts5xCreateTokenizerFailed,
 }
@@ -258,9 +259,6 @@ impl std::fmt::Display for RegisterTokenizerError {
             RegisterTokenizerError::Fts5ApiNul => {
                 write!(f, "Could not get fts5 api.")
             }
-            RegisterTokenizerError::UnrecognizedName(err) => {
-                write!(f, "Name has a null character: {err}.")
-            }
             RegisterTokenizerError::Fts5xCreateTokenizerV2Nul => {
                 write!(f, "Fts5 api xCreateTokenizer_v2 ptr is null.")
             }
@@ -271,18 +269,11 @@ impl std::fmt::Display for RegisterTokenizerError {
     }
 }
 
-impl From<NulError> for RegisterTokenizerError {
-    fn from(value: NulError) -> Self {
-        Self::UnrecognizedName(value)
-    }
-}
-
 impl std::error::Error for RegisterTokenizerError {}
 
 pub fn register_tokenizer<T: Tokenizer>(
     db: &mut Connection,
     global_data: T::Global,
-    name: &str,
 ) -> Result<(), RegisterTokenizerError> {
     unsafe {
         // 获取 fts5_api 结构体的指针，并且使用 sqlite3_bind_pointer 绑定指针
@@ -315,7 +306,6 @@ pub fn register_tokenizer<T: Tokenizer>(
         if api.is_null() {
             return Err(RegisterTokenizerError::Fts5ApiNul);
         }
-        let name = CString::new(name)?;
         let global_data = Box::into_raw(Box::new(global_data));
         // 设置版本
         (*api).iVersion = FTS5_API_VERSION;
@@ -325,7 +315,7 @@ pub fn register_tokenizer<T: Tokenizer>(
             .as_ref()
             .ok_or(RegisterTokenizerError::Fts5xCreateTokenizerV2Nul)?)(
             api,
-            name.as_ptr(),
+            T::name().as_ptr(),
             global_data.cast::<c_void>(),
             &mut fts5_tokenizer_v2 {
                 iVersion: FTS5_API_VERSION,
