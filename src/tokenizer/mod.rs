@@ -129,8 +129,8 @@ unsafe extern "C" fn x_create<T: Tokenizer>(
 }
 
 unsafe extern "C" fn x_delete<T: Tokenizer>(v: *mut Fts5Tokenizer) {
-    let b = unsafe { Box::from_raw(v.cast::<T>()) };
-    match std::panic::catch_unwind(AssertUnwindSafe(move || drop(b))) {
+    let tokenizer = unsafe { Box::from_raw(v.cast::<T>()) };
+    match std::panic::catch_unwind(AssertUnwindSafe(move || drop(tokenizer))) {
         Ok(()) => {}
         Err(e) => {
             log::error!(
@@ -143,8 +143,8 @@ unsafe extern "C" fn x_delete<T: Tokenizer>(v: *mut Fts5Tokenizer) {
 }
 
 unsafe extern "C" fn x_destroy<T: Tokenizer>(v: *mut c_void) {
-    let b = unsafe { Box::from_raw(v.cast::<T::Global>()) };
-    match std::panic::catch_unwind(AssertUnwindSafe(move || drop(b))) {
+    let tokenizer = unsafe { Box::from_raw(v.cast::<T::Global>()) };
+    match std::panic::catch_unwind(AssertUnwindSafe(move || drop(tokenizer))) {
         Ok(()) => {}
         Err(e) => {
             log::error!(
@@ -317,9 +317,9 @@ pub fn register_tokenizer<T: Tokenizer>(
         }
         let name = CString::new(name)?;
         let global_data = Box::into_raw(Box::new(global_data));
-
+        // 设置版本
         (*api).iVersion = FTS5_API_VERSION;
-
+        // 注册tokenizer
         let rc = ((*api)
             .xCreateTokenizer_v2
             .as_ref()
@@ -335,7 +335,6 @@ pub fn register_tokenizer<T: Tokenizer>(
             },
             Some(x_destroy::<T>),
         );
-
         if rc != SQLITE_OK {
             return Err(RegisterTokenizerError::Fts5xCreateTokenizerFailed);
         }
