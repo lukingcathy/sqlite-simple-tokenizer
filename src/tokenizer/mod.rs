@@ -12,7 +12,7 @@ use rusqlite::ffi::{
     fts5_api, fts5_tokenizer_v2, sqlite3_bind_pointer, sqlite3_finalize, sqlite3_prepare_v3,
     sqlite3_step, sqlite3_stmt,
 };
-use std::ffi::{CStr, CString, NulError, c_char, c_int, c_void};
+use std::ffi::{CStr, c_char, c_int, c_void};
 use std::fmt::Formatter;
 use std::panic::AssertUnwindSafe;
 
