@@ -245,6 +245,7 @@ pub enum RegisterTokenizerError {
     SelectFts5Failed,
     Fts5ApiNul,
     UnrecognizedName(NulError),
+    Fts5xCreateTokenizerV2Nul,
     Fts5xCreateTokenizerFailed,
 }
 
@@ -258,7 +259,10 @@ impl std::fmt::Display for RegisterTokenizerError {
                 write!(f, "Could not get fts5 api.")
             }
             RegisterTokenizerError::UnrecognizedName(err) => {
-                write!(f, "Name has a null character: {err}")
+                write!(f, "Name has a null character: {err}.")
+            }
+            RegisterTokenizerError::Fts5xCreateTokenizerV2Nul => {
+                write!(f, "Fts5 api xCreateTokenizer_v2 ptr is null.")
             }
             RegisterTokenizerError::Fts5xCreateTokenizerFailed => {
                 write!(f, "Fts5 xCreateTokenizer failed.")
@@ -316,7 +320,10 @@ pub fn register_tokenizer<T: Tokenizer>(
 
         (*api).iVersion = FTS5_API_VERSION;
 
-        let rc = ((*api).xCreateTokenizer_v2.as_ref().unwrap())(
+        let rc = ((*api)
+            .xCreateTokenizer_v2
+            .as_ref()
+            .ok_or(RegisterTokenizerError::Fts5xCreateTokenizerV2Nul)?)(
             api,
             name.as_ptr(),
             global_data.cast::<c_void>(),
