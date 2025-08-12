@@ -1,7 +1,7 @@
 use crate::STOPWORD;
 use crate::tokenizer::{
     TokenizeReason, Tokenizer,
-    utils::{EN_STEMMER, is_space_str, make_lowercase},
+    utils::{EN_STEMMER, is_space_or_ascii_punctuation_str, make_lowercase},
 };
 use jieba_rs::Jieba;
 use rusqlite::Error;
@@ -36,8 +36,8 @@ impl Tokenizer for JiebaTokenizer {
         for word in JIEBA.cut(text.as_ref(), true) {
             let range = index..index + word.len();
             index += word.len();
-            // 如果是空字符、控制字符组成的字符串，也不处理
-            if is_space_str(word) {
+            // 如果是空字符、控制字符、ascii标点字符组成组成的字符串，也不处理
+            if is_space_or_ascii_punctuation_str(word) {
                 continue;
             }
             // 对单词做归一化处理，并且将单词转换成小写

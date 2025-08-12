@@ -7,11 +7,11 @@ use unicode_normalization::UnicodeNormalization;
 pub(super) static EN_STEMMER: LazyLock<Stemmer> =
     LazyLock::new(|| Stemmer::create(Algorithm::English));
 
-/// 判断是不是空字符，或者是控制字符组成的字符串
-pub(super) fn is_space_str(word: &str) -> bool {
+/// 判断是不是由空字符、控制字符、ascii标点字符组成的字符串
+pub(super) fn is_space_or_ascii_punctuation_str(word: &str) -> bool {
     let mut is_space = true;
     for ch in word.chars() {
-        if !ch.is_whitespace() && !ch.is_control() {
+        if !ch.is_whitespace() && !ch.is_control() && !ch.is_ascii_punctuation() {
             is_space = false;
             break;
         }
