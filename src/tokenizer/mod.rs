@@ -271,18 +271,15 @@ impl std::fmt::Display for RegisterTokenizerError {
 
 impl std::error::Error for RegisterTokenizerError {}
 
-pub fn register_tokenizer<T: Tokenizer>(
-    db: &mut Connection,
-    global_data: T::Global,
-) -> Result<(), RegisterTokenizerError> {
+unsafe fn get_fts5_api(db: &mut Connection) -> Result<*mut fts5_api, RegisterTokenizerError> {
+    // 获取 fts5_api 结构体的指针，并且使用 sqlite3_bind_pointer 绑定指针
+    // 详情 https://sqlite.org/fts5.html#extending_fts5
+    let dbp = unsafe { db.handle() };
+    let mut api: *mut fts5_api = std::ptr::null_mut();
+    let mut stmt: *mut sqlite3_stmt = std::ptr::null_mut();
+    const FTS5_QUERY_STATEMENT: &CStr = c"SELECT fts5(?1)";
+    const FTS5_QUERY_STATEMENT_LEN: c_int = FTS5_QUERY_STATEMENT.count_bytes() as c_int;
     unsafe {
-        // 获取 fts5_api 结构体的指针，并且使用 sqlite3_bind_pointer 绑定指针
-        // 详情 https://sqlite.org/fts5.html#extending_fts5
-        let dbp = db.handle();
-        let mut api: *mut fts5_api = std::ptr::null_mut();
-        let mut stmt: *mut sqlite3_stmt = std::ptr::null_mut();
-        const FTS5_QUERY_STATEMENT: &CStr = c"SELECT fts5(?1)";
-        const FTS5_QUERY_STATEMENT_LEN: c_int = FTS5_QUERY_STATEMENT.count_bytes() as c_int;
         if sqlite3_prepare_v3(
             dbp,
             FTS5_QUERY_STATEMENT.as_ptr(),
@@ -303,9 +300,19 @@ pub fn register_tokenizer<T: Tokenizer>(
         );
         sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        if api.is_null() {
-            return Err(RegisterTokenizerError::Fts5ApiNul);
-        }
+    }
+    if api.is_null() {
+        return Err(RegisterTokenizerError::Fts5ApiNul);
+    }
+    Ok(api)
+}
+
+pub fn register_tokenizer<T: Tokenizer>(
+    db: &mut Connection,
+    global_data: T::Global,
+) -> Result<(), RegisterTokenizerError> {
+    unsafe {
+        let api = get_fts5_api(db)?;
         let global_data = Box::into_raw(Box::new(global_data));
         // 设置版本
         (*api).iVersion = FTS5_API_VERSION;
