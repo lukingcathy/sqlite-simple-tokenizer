@@ -369,8 +369,24 @@ mod tests {
         )
         .unwrap();
         // 插入数据
-        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+        conn.execute(
+            r#"INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('举头望明月'),('like'),('liking'),('liked'),('I''m making a sqlite tokenizer'),('I''m learning English');"#,
+            [],
+        )
             .unwrap();
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH 'guo';")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row)
+        }
+        // 拼音分词只设置在文档写入的过程，这里通过拼音是查不到
+        assert_eq!(0, vec.len());
     }
 
     #[test]
@@ -384,8 +400,48 @@ mod tests {
         )
         .unwrap();
         // 插入数据
-        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+        conn.execute(
+            r#"INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('举头望明月'),('like'),('liking'),('liked'),('I''m making a sqlite tokenizer'),('I''m learning English');"#,
+            [],
+        )
             .unwrap();
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH '国';")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row)
+        }
+        assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH 'like'")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row);
+        }
+        // like 在停词表中，查询结果为空
+        assert_eq!(0, vec.len());
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH 'tokenizer'")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row);
+        }
+        assert_eq!(["I'm making a sqlite tokenizer"], vec.as_slice());
     }
 
     #[test]
@@ -399,7 +455,20 @@ mod tests {
         )
         .unwrap();
         // 插入数据
-        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+        conn.execute(
+            "INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('举头望明月'),('like'),('liking'),('liked');",
+            [],
+        )
             .unwrap();
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH '国家';")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        for row in result {
+            let row = row.unwrap();
+            assert_eq!("国家".to_owned(), row);
+        }
     }
 }
