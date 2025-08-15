@@ -16,8 +16,10 @@ use std::ffi::{CStr, c_char, c_int, c_void};
 use std::fmt::Formatter;
 use std::panic::AssertUnwindSafe;
 
-/// 用来指定 fts5_api 的版本
+/// fts5_api 的版本，要求最低版本不能低于 3
 const FTS5_API_VERSION: c_int = 3;
+/// 设置 fts5_tokenizer 的版本，设置为 2，使用 v2 接口
+const FTS5_TOKENIZER_VERSION: c_int = 2;
 
 /// FTS5 请求对所提供的文本进行标记化的原因
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -246,8 +248,9 @@ fn panic_err_to_str(msg: &Box<dyn std::any::Any + Send>) -> &str {
 pub enum RegisterTokenizerError {
     SelectFts5Failed,
     Fts5ApiNul,
+    Fts5ApiVersionTooLow,
     Fts5xCreateTokenizerV2Nul,
-    Fts5xCreateTokenizerFailed,
+    Fts5xCreateTokenizerFailed(i32),
 }
 
 impl std::fmt::Display for RegisterTokenizerError {
@@ -259,11 +262,17 @@ impl std::fmt::Display for RegisterTokenizerError {
             RegisterTokenizerError::Fts5ApiNul => {
                 write!(f, "Could not get fts5 api.")
             }
+            RegisterTokenizerError::Fts5ApiVersionTooLow => {
+                write!(f, "The version of fts5 api is too low.")
+            }
             RegisterTokenizerError::Fts5xCreateTokenizerV2Nul => {
                 write!(f, "Fts5 api xCreateTokenizer_v2 ptr is null.")
             }
-            RegisterTokenizerError::Fts5xCreateTokenizerFailed => {
-                write!(f, "Fts5 xCreateTokenizer failed.")
+            RegisterTokenizerError::Fts5xCreateTokenizerFailed(rc) => {
+                write!(
+                    f,
+                    "Fts5 xCreateTokenizer failed, the error flag when sqlite returned is {rc}."
+                )
             }
         }
     }
@@ -271,6 +280,7 @@ impl std::fmt::Display for RegisterTokenizerError {
 
 impl std::error::Error for RegisterTokenizerError {}
 
+/// 内部获取 fts5_api 指针的方法
 unsafe fn get_fts5_api(db: &mut Connection) -> Result<*mut fts5_api, RegisterTokenizerError> {
     // 获取 fts5_api 结构体的指针，并且使用 sqlite3_bind_pointer 绑定指针
     // 详情 https://sqlite.org/fts5.html#extending_fts5
@@ -307,15 +317,17 @@ unsafe fn get_fts5_api(db: &mut Connection) -> Result<*mut fts5_api, RegisterTok
     Ok(api)
 }
 
+/// 注册 Tokenizer
 pub fn register_tokenizer<T: Tokenizer>(
     db: &mut Connection,
     global_data: T::Global,
 ) -> Result<(), RegisterTokenizerError> {
     unsafe {
-        let api = get_fts5_api(db)?;
+        let api: *mut fts5_api = get_fts5_api(db)?;
         let global_data = Box::into_raw(Box::new(global_data));
-        // 设置版本
-        (*api).iVersion = FTS5_API_VERSION;
+        if (*api).iVersion < FTS5_API_VERSION {
+            return Err(RegisterTokenizerError::Fts5ApiVersionTooLow);
+        }
         // 注册tokenizer
         let rc = ((*api)
             .xCreateTokenizer_v2
@@ -325,7 +337,7 @@ pub fn register_tokenizer<T: Tokenizer>(
             T::name().as_ptr(),
             global_data.cast::<c_void>(),
             &mut fts5_tokenizer_v2 {
-                iVersion: FTS5_API_VERSION,
+                iVersion: FTS5_TOKENIZER_VERSION,
                 xCreate: Some(x_create::<T>),
                 xDelete: Some(x_delete::<T>),
                 xTokenize: Some(x_tokenize::<T>),
@@ -333,8 +345,61 @@ pub fn register_tokenizer<T: Tokenizer>(
             Some(x_destroy::<T>),
         );
         if rc != SQLITE_OK {
-            return Err(RegisterTokenizerError::Fts5xCreateTokenizerFailed);
+            return Err(RegisterTokenizerError::Fts5xCreateTokenizerFailed(rc));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tokenizer::jieba_tokenizer::JiebaTokenizer;
+    use crate::tokenizer::register_tokenizer;
+    use crate::tokenizer::simple_tokenizer::SimpleTokenizer;
+    use rusqlite::Connection;
+
+    #[test]
+    fn test_register_simple_tokenizer_with_pinyin() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        // 创建一个测试表
+        conn.execute(
+            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple');",
+            [],
+        )
+        .unwrap();
+        // 插入数据
+        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+            .unwrap();
+    }
+
+    #[test]
+    fn test_register_simple_tokenizer_no_with_pinyin() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        // 创建一个测试表, simple 不开启 pinyin 分词
+        conn.execute(
+            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple 0');",
+            [],
+        )
+        .unwrap();
+        // 插入数据
+        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+            .unwrap();
+    }
+
+    #[test]
+    fn test_register_jieba_tokenizer() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<JiebaTokenizer>(&mut conn, ()).unwrap();
+        // 创建一个测试表, simple 不开启 pinyin 分词
+        conn.execute(
+            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'jieba');",
+            [],
+        )
+        .unwrap();
+        // 插入数据
+        conn.execute("INSERT INTO t1 VALUES ('中华人民共和国国歌');", [])
+            .unwrap();
     }
 }

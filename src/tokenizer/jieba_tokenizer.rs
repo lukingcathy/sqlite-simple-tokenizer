@@ -21,7 +21,7 @@ impl Tokenizer for JiebaTokenizer {
         c"jieba"
     }
 
-    fn new(&(): &Self::Global, _args: Vec<String>) -> Result<Self, Error> {
+    fn new(_global: &Self::Global, _args: Vec<String>) -> Result<Self, Error> {
         Ok(Self)
     }
 
@@ -67,7 +67,7 @@ mod tests {
     use super::JIEBA;
 
     #[test]
-    fn test_jieba_cut() {
+    fn test_tokenize_by_jieba_cut() {
         let text = "The quick (\"brown\") fox can't jump 32.3 feet, right? 我将点燃星海！天上的stars全部都是 eye，不要凝视";
         let words = JIEBA.cut(text, false);
         let vec = vec![

@@ -37,7 +37,7 @@ impl Tokenizer for SimpleTokenizer {
         c"simple"
     }
 
-    fn new(&(): &Self::Global, args: Vec<String>) -> Result<Self, Error> {
+    fn new(_global: &Self::Global, args: Vec<String>) -> Result<Self, Error> {
         let mut tokenizer = Self::default();
         // 允许传入 0 值，表示不需要支持拼音
         if let Some(flag) = args.first()
@@ -100,7 +100,7 @@ mod tests {
     use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
-    fn test_unicode_word_indices() {
+    fn test_tokenize_by_unicode_word_indices() {
         let text = "The quick (\"brown\") fox can't jump 32.3 feet, right? 我将点燃星海！天上的stars全部都是 eye，不要凝视";
         let uwi1 = text.unicode_word_indices().collect::<Vec<(usize, &str)>>();
         let b: &[_] = &[

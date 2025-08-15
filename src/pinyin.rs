@@ -152,7 +152,7 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn test_pinyin_dirt() {
+    fn test_get_pinyin_by_dirt() {
         let ch = '中';
         let pinyin = *PINYIN_DIRT.get(&ch).unwrap();
         assert_eq!("zhong", pinyin);
