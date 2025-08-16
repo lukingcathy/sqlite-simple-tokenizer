@@ -21,8 +21,8 @@ pub(super) fn is_space_or_ascii_punctuation_str(word: &str) -> bool {
 
 /// 判断这个单词是否需要使用 pinyin 模块进行处理
 pub(super) fn need_pinyin(word: &str) -> bool {
-    if word.is_empty() || word.len() > 1 {
-        // 空串，或者长度大于 1 的单词，不需要 pinyin 处理
+    if word.is_empty() || word.chars().count() > 1 {
+        // 空串，或者字符个数大于 1 的单词，不需要 pinyin 处理
         return false;
     }
     if let Some(ch) = word.chars().next() {

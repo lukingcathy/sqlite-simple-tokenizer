@@ -375,6 +375,19 @@ mod tests {
         )
             .unwrap();
         let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH '国';")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row)
+        }
+        // 拼音分词设置在文档写入的时候生效，而查询匹配的时候不生效，所以这里通过字是查不到记录的
+        assert_eq!(0, vec.len());
+        let mut stmt = conn
             .prepare("SELECT * FROM t1 WHERE text MATCH 'guo';")
             .unwrap();
         let result = stmt
@@ -385,8 +398,8 @@ mod tests {
             let row = row.unwrap();
             vec.push(row)
         }
-        // 拼音分词只设置在文档写入的过程，这里通过拼音是查不到
-        assert_eq!(0, vec.len());
+        // 拼音分词设置在文档写入的时候生效，可以直接通过拼音来匹配
+        assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
     }
 
     #[test]
@@ -416,6 +429,7 @@ mod tests {
             let row = row.unwrap();
             vec.push(row)
         }
+        // 不开启开启拼音分词，这里字符正常
         assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
         let mut stmt = conn
             .prepare("SELECT * FROM t1 WHERE text MATCH 'like'")
