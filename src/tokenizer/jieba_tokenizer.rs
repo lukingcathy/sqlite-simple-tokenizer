@@ -66,6 +66,7 @@ impl Tokenizer for JiebaTokenizer {
         let mut word_buf = String::new();
         let mut index = 0_usize;
         for word in JIEBA.cut(text.as_ref(), true) {
+            // sqlite 要求的是 byte 偏移量
             let range = index..index + word.len();
             index += word.len();
             // 如果是空字符、控制字符、ascii标点字符组成组成的字符串，也不处理
@@ -97,7 +98,7 @@ mod tests {
     fn test_tokenize_by_jieba_cut() {
         let text = "The quick (\"brown\") fox can't jump 32.3 feet, right? 我将点燃星海！天上的stars全部都是 eye，不要凝视";
         let words = JIEBA.cut(text, false);
-        let vec = vec![
+        let vec = [
             "The",
             " ",
             "quick",
@@ -143,7 +144,7 @@ mod tests {
         ];
         assert_eq!(words, vec);
         let words = JIEBA.cut(text, true);
-        let vec = vec![
+        let vec = [
             "The",
             " ",
             "quick",
