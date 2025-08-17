@@ -13,20 +13,27 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct SimpleTokenizer {
     /// 是否支持拼音，默认支持拼音
     enable_pinyin: bool,
+    /// 是否启用停词表, 默认启用
+    enable_stopword: bool,
 }
 
 impl Default for SimpleTokenizer {
     fn default() -> Self {
         Self {
             enable_pinyin: true,
+            enable_stopword: true,
         }
     }
 }
 
 impl SimpleTokenizer {
-    /// 关闭拼音支持
+    /// 关闭拼音分词
     pub fn disable_pinyin(&mut self) {
         self.enable_pinyin = false;
+    }
+    /// 不启用停词表
+    pub fn disable_stopword(&mut self) {
+        self.enable_stopword = false;
     }
 }
 
@@ -39,17 +46,13 @@ impl Tokenizer for SimpleTokenizer {
 
     fn new(_global: &Self::Global, args: Vec<String>) -> Result<Self, Error> {
         let mut tokenizer = Self::default();
-        // 允许传入 0 值，表示不需要支持拼音
-        if let Some(flag) = args.first()
-            && let Ok(flag) = flag.parse::<i32>()
-            && flag == 0
-        {
-            tokenizer.disable_pinyin()
-        };
         for arg in args {
             match arg.as_str() {
                 "disable_pinyin" => {
                     tokenizer.disable_pinyin();
+                }
+                "disable_stopword" => {
+                    tokenizer.disable_stopword();
                 }
                 _ => {}
             }
@@ -87,7 +90,7 @@ impl Tokenizer for SimpleTokenizer {
                 // 不需要使用 pinyin 模块进行处理
                 // 对单词做归一化处理，并且将单词转换成小写
                 let need_stem = make_lowercase(word, &mut word_buf);
-                if STOPWORD.contains(word_buf.as_str()) {
+                if self.enable_stopword && STOPWORD.contains(word_buf.as_str()) {
                     // 不处理停词
                     continue;
                 }

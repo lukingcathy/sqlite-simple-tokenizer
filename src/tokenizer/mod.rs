@@ -459,6 +459,36 @@ mod tests {
     }
 
     #[test]
+    fn test_register_simple_tokenizer_no_with_stopword() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        // 创建一个测试表, simple 不启用停词表
+        conn.execute(
+            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple disable_stopword');",
+            [],
+        )
+        .unwrap();
+        // 插入数据
+        conn.execute(
+            r#"INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('举头望明月'),('like'),('liking'),('liked'),('I''m making a sqlite tokenizer'),('I''m learning English');"#,
+            [],
+        )
+            .unwrap();
+        let mut stmt = conn
+            .prepare("SELECT * FROM t1 WHERE text MATCH 'like'")
+            .unwrap();
+        let result = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
+            .unwrap();
+        let mut vec = Vec::new();
+        for row in result {
+            let row = row.unwrap();
+            vec.push(row);
+        }
+        assert_eq!(["like", "liking", "liked"], vec.as_slice());
+    }
+
+    #[test]
     fn test_register_jieba_tokenizer() {
         let mut conn = Connection::open_in_memory().unwrap();
         register_tokenizer::<JiebaTokenizer>(&mut conn, ()).unwrap();

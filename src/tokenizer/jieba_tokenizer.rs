@@ -12,7 +12,25 @@ use std::sync::LazyLock;
 static JIEBA: LazyLock<Jieba> = LazyLock::new(Jieba::new);
 
 /// 使用 jieba 分词器
-pub struct JiebaTokenizer;
+pub struct JiebaTokenizer {
+    /// 是否启用停词表, 默认启用
+    enable_stopword: bool,
+}
+
+impl Default for JiebaTokenizer {
+    fn default() -> Self {
+        Self {
+            enable_stopword: true,
+        }
+    }
+}
+
+impl JiebaTokenizer {
+    /// 不启用停词表
+    pub fn disable_stopword(&mut self) {
+        self.enable_stopword = false;
+    }
+}
 
 impl Tokenizer for JiebaTokenizer {
     type Global = ();
@@ -21,8 +39,17 @@ impl Tokenizer for JiebaTokenizer {
         c"jieba"
     }
 
-    fn new(_global: &Self::Global, _args: Vec<String>) -> Result<Self, Error> {
-        Ok(Self)
+    fn new(_global: &Self::Global, args: Vec<String>) -> Result<Self, Error> {
+        let mut tokenizer = Self::default();
+        for arg in args {
+            match arg.as_str() {
+                "disable_stopword" => {
+                    tokenizer.disable_stopword();
+                }
+                _ => {}
+            }
+        }
+        Ok(tokenizer)
     }
 
     fn tokenize<TKF>(
@@ -47,7 +74,7 @@ impl Tokenizer for JiebaTokenizer {
             }
             // 对单词做归一化处理，并且将单词转换成小写
             let need_stem = make_lowercase(word, &mut word_buf);
-            if STOPWORD.contains(word_buf.as_str()) {
+            if self.enable_stopword && STOPWORD.contains(word_buf.as_str()) {
                 // 不处理停词
                 continue;
             }
