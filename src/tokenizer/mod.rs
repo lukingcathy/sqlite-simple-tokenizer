@@ -408,7 +408,7 @@ mod tests {
         register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
         // 创建一个测试表, simple 不开启 pinyin 分词
         conn.execute(
-            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple 0');",
+            "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple disable_pinyin');",
             [],
         )
         .unwrap();

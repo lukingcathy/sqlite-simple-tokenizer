@@ -46,6 +46,14 @@ impl Tokenizer for SimpleTokenizer {
         {
             tokenizer.disable_pinyin()
         };
+        for arg in args {
+            match arg.as_str() {
+                "disable_pinyin" => {
+                    tokenizer.disable_pinyin();
+                }
+                _ => {}
+            }
+        }
         Ok(tokenizer)
     }
 
