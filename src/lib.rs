@@ -18,6 +18,7 @@ pub fn load(connection: &Connection) -> anyhow::Result<()> {
 }
 
 pub fn load_with_loglevel(connection: &Connection, log_level: LevelFilter) -> anyhow::Result<()> {
+    // 设置 log
     init_logging(log_level);
     // 加载拓展函数
     create_scalar_functions(connection)?;

@@ -95,7 +95,7 @@ impl Tokenizer for SimpleTokenizer {
                     continue;
                 }
                 if need_stem {
-                    let stemmed = EN_STEMMER.stem(word_buf.as_str()).to_string();
+                    let stemmed = EN_STEMMER.stem(word_buf.as_str()).into_owned();
                     (push_token)(stemmed.as_bytes(), range, false)?;
                 } else {
                     (push_token)(word_buf.as_bytes(), range, false)?;
