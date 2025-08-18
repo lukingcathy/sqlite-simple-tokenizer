@@ -281,7 +281,7 @@ impl std::fmt::Display for RegisterTokenizerError {
 impl std::error::Error for RegisterTokenizerError {}
 
 /// 内部获取 fts5_api 指针的方法
-unsafe fn get_fts5_api(db: &mut Connection) -> Result<*mut fts5_api, RegisterTokenizerError> {
+unsafe fn get_fts5_api(db: &Connection) -> Result<*mut fts5_api, RegisterTokenizerError> {
     // 获取 fts5_api 结构体的指针，并且使用 sqlite3_bind_pointer 绑定指针
     // 详情 https://sqlite.org/fts5.html#extending_fts5
     let dbp = unsafe { db.handle() };
@@ -319,7 +319,7 @@ unsafe fn get_fts5_api(db: &mut Connection) -> Result<*mut fts5_api, RegisterTok
 
 /// 注册 Tokenizer
 pub fn register_tokenizer<T: Tokenizer>(
-    db: &mut Connection,
+    db: &Connection,
     global_data: T::Global,
 ) -> Result<(), RegisterTokenizerError> {
     unsafe {
