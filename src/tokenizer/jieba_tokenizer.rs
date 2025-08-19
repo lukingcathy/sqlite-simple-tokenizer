@@ -42,11 +42,8 @@ impl Tokenizer for JiebaTokenizer {
     fn new(_global: &Self::Global, args: Vec<String>) -> Result<Self, Error> {
         let mut tokenizer = Self::default();
         for arg in args {
-            match arg.as_str() {
-                "disable_stopword" => {
-                    tokenizer.disable_stopword();
-                }
-                _ => {}
+            if arg.as_str() == "disable_stopword" {
+                tokenizer.disable_stopword();
             }
         }
         Ok(tokenizer)
