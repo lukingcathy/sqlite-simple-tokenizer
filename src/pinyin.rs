@@ -1,6 +1,6 @@
 use phf::phf_set;
 use std::char;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 include!(concat!(env!("OUT_DIR"), "/pinyin_data.rs"));
 
@@ -28,11 +28,11 @@ pub fn get_pinyin(ch: &char) -> Option<Vec<String>> {
 /// - `zhuang` 得到 `{"zhuang", "z+h+u+a+n+g", "zhu+ang", "zhu+an+g", "zhuan+g"}`
 /// - `zhangliangying` 得到  `{"zhangliangying", "zhang+li+ang+yin+g", "zhang+li+ang+ying", "zhang+liang+yin+g", "zhang+liang+ying", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
 /// - `zhangliangy` 得到  `{"zhangliangy", "zhang+li+ang+y", "zhang+liang+y", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
-pub fn split_pinyin(input: &str) -> HashSet<String> {
+pub fn split_pinyin(input: &str) -> BTreeSet<String> {
     let len = input.len();
     const MAX_LEN: usize = 20;
     if len <= 1 || len > MAX_LEN {
-        return HashSet::from([input.to_owned()]);
+        return BTreeSet::from([input.to_owned()]);
     }
     let spaced = input
         .chars()
@@ -47,12 +47,12 @@ pub fn split_pinyin(input: &str) -> HashSet<String> {
     if len > 2 {
         let pinyin = split_pinyin_with_index(input, 0, len);
         // 去重
-        let mut pinyin = pinyin.into_iter().collect::<HashSet<_>>();
+        let mut pinyin = pinyin.into_iter().collect::<BTreeSet<_>>();
         pinyin.insert(spaced);
         pinyin.insert(input.to_owned());
         pinyin
     } else {
-        HashSet::from([input.to_owned(), spaced])
+        BTreeSet::from([input.to_owned(), spaced])
     }
 }
 
@@ -149,7 +149,7 @@ static PINYIN_VALID: phf::Set<&'static str> = phf_set! {
 #[cfg(test)]
 mod tests {
     use crate::pinyin::{PINYIN_DIRT, get_pinyin, split_pinyin};
-    use std::collections::HashSet;
+    use std::collections::BTreeSet;
 
     #[test]
     fn test_get_pinyin_by_dirt() {
@@ -177,17 +177,17 @@ mod tests {
     #[test]
     fn test_split_pinyin() {
         let input = "";
-        assert_eq!(HashSet::from(["".to_owned()]), split_pinyin(input));
+        assert_eq!(BTreeSet::from(["".to_owned()]), split_pinyin(input));
         let input = "a";
-        assert_eq!(HashSet::from(["a".to_owned()]), split_pinyin(input));
+        assert_eq!(BTreeSet::from(["a".to_owned()]), split_pinyin(input));
         let input = "ba";
         assert_eq!(
-            HashSet::from(["ba".to_owned(), "b+a".to_owned()]),
+            BTreeSet::from(["ba".to_owned(), "b+a".to_owned()]),
             split_pinyin(input)
         );
         let input = "zhuang";
         assert_eq!(
-            HashSet::from([
+            BTreeSet::from([
                 "z+h+u+a+n+g".to_owned(),
                 "zhuang".to_owned(),
                 "zhuan+g".to_owned(),
@@ -198,7 +198,7 @@ mod tests {
         );
         let input = "zhangliangy";
         assert_eq!(
-            HashSet::from([
+            BTreeSet::from([
                 "z+h+a+n+g+l+i+a+n+g+y".to_owned(),
                 "zhangliangy".to_owned(),
                 "zhang+li+ang+y".to_owned(),
@@ -208,7 +208,7 @@ mod tests {
         );
         let input = "zhangliangying";
         assert_eq!(
-            HashSet::from([
+            BTreeSet::from([
                 "zhangliangying".to_owned(),
                 "zhang+li+ang+ying".to_owned(),
                 "zhang+li+ang+yin+g".to_owned(),
@@ -220,7 +220,7 @@ mod tests {
         );
         let input = "zhangliangyingzhangliangying";
         assert_eq!(
-            HashSet::from(["zhangliangyingzhangliangying".to_owned()]),
+            BTreeSet::from(["zhangliangyingzhangliangying".to_owned()]),
             split_pinyin(input)
         );
     }

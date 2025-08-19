@@ -1,5 +1,5 @@
 use crate::STOPWORD;
-use crate::pinyin::get_pinyin;
+use crate::pinyin::{get_pinyin, split_pinyin};
 use crate::tokenizer::{
     TokenizeReason, Tokenizer,
     utils::{EN_STEMMER, make_lowercase, need_pinyin},
@@ -34,6 +34,54 @@ impl SimpleTokenizer {
     /// 不启用停词表
     pub fn disable_stopword(&mut self) {
         self.enable_stopword = false;
+    }
+    /// 将查询文档转换成 SQLite 的 match 语句
+    pub fn tokenize_query(text: &str) -> Option<String> {
+        let mut match_sql = "".to_owned();
+        for (_, word) in text.unicode_word_indices() {
+            // 判断是否是单字
+            if need_pinyin(word) {
+                if let Some(ch) = word.chars().next()
+                    && let Some(pinyin_vec) = get_pinyin(&ch)
+                {
+                    for pinyin in pinyin_vec {
+                        let sql = Self::split_pinyin_to_sql(&pinyin);
+                        Self::append_match_sql(sql, &mut match_sql);
+                    }
+                }
+            } else {
+                let sql = Self::split_pinyin_to_sql(word);
+                Self::append_match_sql(sql, &mut match_sql);
+            }
+        }
+        Some(match_sql)
+    }
+
+    fn append_match_sql(sql: String, buf: &mut String) {
+        if buf.is_empty() {
+            buf.push('(');
+        } else {
+            buf.push_str(" AND (");
+        }
+        buf.push_str(&sql);
+        buf.push(')');
+    }
+
+    fn split_pinyin_to_sql(word: &str) -> String {
+        let pinyin_set = split_pinyin(word);
+        pinyin_set
+            .into_iter()
+            .fold(String::new(), |mut acc, pinyin| {
+                if acc.is_empty() {
+                    acc.push_str(&pinyin);
+                    acc.push('*');
+                } else {
+                    acc.push_str(" OR ");
+                    acc.push_str(&pinyin);
+                    acc.push('*');
+                };
+                acc
+            })
     }
 }
 

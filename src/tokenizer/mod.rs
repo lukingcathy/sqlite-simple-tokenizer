@@ -360,8 +360,8 @@ mod tests {
 
     #[test]
     fn test_register_simple_tokenizer_with_pinyin() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        let conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&conn, ()).unwrap();
         // 创建一个测试表
         conn.execute(
             "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple');",
@@ -404,8 +404,8 @@ mod tests {
 
     #[test]
     fn test_register_simple_tokenizer_no_with_pinyin() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        let conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&conn, ()).unwrap();
         // 创建一个测试表, simple 不开启 pinyin 分词
         conn.execute(
             "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple disable_pinyin');",
@@ -460,8 +460,8 @@ mod tests {
 
     #[test]
     fn test_register_simple_tokenizer_no_with_stopword() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        register_tokenizer::<SimpleTokenizer>(&mut conn, ()).unwrap();
+        let conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<SimpleTokenizer>(&conn, ()).unwrap();
         // 创建一个测试表, simple 不启用停词表
         conn.execute(
             "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'simple disable_stopword');",
@@ -490,8 +490,8 @@ mod tests {
 
     #[test]
     fn test_register_jieba_tokenizer() {
-        let mut conn = Connection::open_in_memory().unwrap();
-        register_tokenizer::<JiebaTokenizer>(&mut conn, ()).unwrap();
+        let conn = Connection::open_in_memory().unwrap();
+        register_tokenizer::<JiebaTokenizer>(&conn, ()).unwrap();
         // 创建一个测试表, simple 不开启 pinyin 分词
         conn.execute(
             "CREATE VIRTUAL TABLE t1 USING fts5(text, tokenize = 'jieba');",
