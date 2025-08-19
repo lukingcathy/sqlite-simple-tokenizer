@@ -1,4 +1,4 @@
-# sqlite-plugin-demo
+# sqlite-simple_tokenizer
 
 ![License](https://img.shields.io/crates/l/PROJECT.svg)
 
