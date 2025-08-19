@@ -74,7 +74,6 @@ mod tests {
             let row = row.unwrap();
             vec.push(row)
         }
-        // 拼音分词设置在文档写入的时候生效，可以直接通过拼音来匹配
         assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
     }
 }
