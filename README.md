@@ -1,13 +1,63 @@
-# sqlite-simple_tokenizer
+# sqlite-simple-tokenizer
 
 ![License](https://img.shields.io/crates/l/PROJECT.svg)
 
-> 这是一个使用 `rusqlite` 构建 SQLite fts5 插件的项目，其主要功能是为 SQLite 提供中文和拼音分词和检索。这个项目可以作为 Rust 的 crate 使用，也可以将其编译成动态库，在 SQLite 中加载和使用。
+> 这是一个使用 `rusqlite` 构建 SQLite fts5 插件的项目，其主要功能是为 SQLite 提供中文分词。这个项目可以作为 Rust 的 crate 使用，也可以将其编译成动态库在 SQLite 中加载和使用。
 
-这个项目提供两种 SQLite 分词器，分别是 `simple_tokenizer` 和 `jieba_tokenizer`。这两种分词器均可处理汉语和英语两种语言，内置了汉语和英语常见的停词表，英语单词则进行了词根提取。
+## 简介
 
-- `simple_tokenizer` 对于汉语的处理，是将单字转换成 pinyin，并且辅以 `simple_query` 函数进行匹配查询。此分词器只在文档写入的时候生效，查询应该使用 `simple_query`。该分词器对拼音的处理方式，极大程度上参考了 [simple](https://github.com/wangfenjin/simple) 这个项目，对此十分感谢 `simple` 项目提供的思路。
-- `jieba_tokenizer` 对于汉语的处理，是根据 `jieba.rs` 这个库来进行。该分词器在文档查询和文档写入的时候均生效，可以正常使用 `match` 语法进行匹配。
+这个项目提供两种 SQLite 分词器，分别是 `simple_tokenizer` 和 `jieba_tokenizer`。这两种分词器均可处理汉语和英语两种语言，内置了汉语和英语常见停词表。汉语可以通过拼音(`simple_tokenizer`)或者词典(`jieba_tokenizer`)进行分词，而英语单词在分词后，会根据 `Snowball Stemmer` 进行了词根提取。
+
+- `simple_tokenizer` 对于汉语的处理，是将单字转换成 pinyin，并且辅以 `simple_query` 函数进行匹配查询。此分词器将单字转换成拼音这个处理，只在文档写入的时候生效，如果需要针对中文语句查询应该使用 `simple_query` 辅助方法，或者是手动转换成拼音后使用 `match` 查询。该分词器对拼音的处理方式，极大程度上参考了 [simple](https://github.com/wangfenjin/simple) 这个项目，对此十分感谢 `simple` 项目提供的思路。
+
+- `jieba_tokenizer` 对于汉语的处理，是根据 `jieba.rs` 这个库进行词典分词。该分词器的分词处理，在文档查询和文档写入的时候均生效，可以正常使用 `match` 语法进行查询。
+
+## Tokenizer 基本配置和 `simple_query` 示例
+
+```sqlite
+-- 使用默认配置注册 tokenizer，即 simple 默认启用 pinyin 模块和停词表，jieba 默认启用停词表
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'simple'
+);
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'jieba'
+);
+
+-- 不启用停词表
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'simple disable_stopword'
+);
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'jieba disable_stopword'
+);
+
+-- simple 不启用 pinyin 模块
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'simple disable_pinyin'
+);
+
+-- simple 不启用 pinyin 模块和停词表
+CREATE VIRTUAL TABLE t1 USING fts5
+(
+    text,
+    tokenize = 'simple disable_pinyin disable_stopword'
+);
+
+-- 使用 simple_query 查询
+SELECT *
+FROM t1
+WHERE text MATCH simple_query('国');
+```
 
 ## 在 Rust 使用这个库
 
