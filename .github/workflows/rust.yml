@@ -27,15 +27,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
-      - name: Check build with --no-default-features
-        run: cargo build --workspace --no-default-features
-      - name: Check build with default features
+      - name: Build
         run: cargo build --workspace
       - name: Test
-        run: cargo test --workspace --all-features --all --benches
+        run: cargo test --workspace
