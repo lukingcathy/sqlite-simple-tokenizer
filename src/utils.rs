@@ -1,6 +1,7 @@
 use std::env;
+use std::error::Error;
 
-pub fn to_rusqlite_error(error: anyhow::Error) -> rusqlite::Error {
+pub fn to_rusqlite_error(error: Box<dyn Error>) -> rusqlite::Error {
     rusqlite::Error::UserFunctionError(format!("{error:?}").into())
 }
 

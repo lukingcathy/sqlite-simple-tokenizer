@@ -29,7 +29,6 @@ defualt = []
 build_extension = ["rusqlite/loadable_extension"]
 
 [dependencies]
-anyhow = "1.0.99"
 env_logger = "0.11.8"
 phf = { workspace = true }
 log = "0.4.27"
