@@ -370,10 +370,11 @@ mod tests {
         .unwrap();
         // 插入数据
         conn.execute(
-            r#"INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('举头望明月'),('like'),('liking'),('liked'),('I''m making a sqlite tokenizer'),('I''m learning English');"#,
+            r#"INSERT INTO t1(text) VALUES ('中华人民共和国国歌'),('静夜思'),('国家'),('铁锅'),('举头望明月'),('like'),('liking'),('liked'),('I''m making a sqlite tokenizer'),('I''m learning English');"#,
             [],
         )
             .unwrap();
+        // 使用 pinyin 分词，那么在查询的时候 match '国'，'国' 被处理成 guo，那么匹配结果包含 guo 这个读音的所有文档
         let mut stmt = conn
             .prepare("SELECT * FROM t1 WHERE text MATCH '国';")
             .unwrap();
@@ -385,21 +386,7 @@ mod tests {
             let row = row.unwrap();
             vec.push(row)
         }
-        // 拼音分词设置在文档写入的时候生效，而查询匹配的时候不生效，所以这里通过字是查不到记录的
-        assert_eq!(0, vec.len());
-        let mut stmt = conn
-            .prepare("SELECT * FROM t1 WHERE text MATCH 'guo';")
-            .unwrap();
-        let result = stmt
-            .query_map([], |row| Ok(row.get::<_, String>(0).unwrap()))
-            .unwrap();
-        let mut vec = Vec::new();
-        for row in result {
-            let row = row.unwrap();
-            vec.push(row)
-        }
-        // 拼音分词设置在文档写入的时候生效，可以直接通过拼音来匹配
-        assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
+        assert_eq!(["中华人民共和国国歌", "国家", "铁锅"], vec.as_slice());
     }
 
     #[test]

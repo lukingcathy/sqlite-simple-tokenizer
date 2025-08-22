@@ -8,7 +8,7 @@
 
 这个项目提供两种 SQLite 分词器，分别是 `simple_tokenizer` 和 `jieba_tokenizer`。这两种分词器均可处理汉语和英语两种语言，内置了汉语和英语常见停词表。汉语可以通过拼音(`simple_tokenizer`)或者词典(`jieba_tokenizer`)进行分词，而英语单词在分词后，会根据 `Snowball Stemmer` 进行了词根提取。
 
-- `simple_tokenizer` 对于汉语的处理，是将单字转换成 pinyin，并且辅以 `simple_query` 函数进行匹配查询。此分词器将单字转换成拼音这个处理，只在文档写入的时候生效，如果需要针对中文语句查询应该使用 `simple_query` 辅助方法，或者是手动转换成拼音后使用 `match` 查询。该分词器对拼音的处理方式，极大程度上参考了 [simple](https://github.com/wangfenjin/simple) 这个项目，对此十分感谢 `simple` 项目提供的思路。
+- `simple_tokenizer` 对于汉语的处理，是将单字转换成 pinyin，并且辅以 `simple_query` 函数进行前缀匹配查询。该分词器对拼音的处理方式，极大程度上参考了 [simple](https://github.com/wangfenjin/simple) 这个项目，对此十分感谢 `simple` 项目提供的思路。
 
 - `jieba_tokenizer` 对于汉语的处理，是根据 `jieba.rs` 这个库进行词典分词。该分词器的分词处理，在文档查询和文档写入的时候均生效，可以正常使用 `match` 语法进行查询。
 

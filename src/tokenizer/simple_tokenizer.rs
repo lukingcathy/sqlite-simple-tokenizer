@@ -110,7 +110,7 @@ impl Tokenizer for SimpleTokenizer {
 
     fn tokenize<TKF>(
         &mut self,
-        reason: TokenizeReason,
+        _reason: TokenizeReason,
         text: &[u8],
         mut push_token: TKF,
     ) -> Result<(), Error>
@@ -122,7 +122,8 @@ impl Tokenizer for SimpleTokenizer {
         let mut word_buf = String::new();
         for (index, word) in text.unicode_word_indices() {
             let range = index..index + word.len();
-            if need_pinyin(word) && self.enable_pinyin && reason == TokenizeReason::Document {
+            // 开启 pinyin 并且这个是中文字符
+            if self.enable_pinyin && need_pinyin(word) {
                 if self.enable_stopword && STOPWORD.contains(word) {
                     // 不处理停词
                     continue;
