@@ -32,6 +32,7 @@ pub(super) fn need_pinyin(word: &str) -> bool {
 }
 
 /// 对单词做归一化，并转换成小写
+///
 /// 如果全部都是由 ascii 字符组成的单词，并且长度超过 1，需要返回一个变量用来提示后续步骤做词干提取
 pub(super) fn make_lowercase(word: &str, buf: &mut String) -> bool {
     buf.clear();

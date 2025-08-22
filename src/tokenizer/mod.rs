@@ -14,6 +14,7 @@ use rusqlite::ffi::{
 };
 use std::ffi::{CStr, c_char, c_int, c_void};
 use std::fmt::Formatter;
+use std::ops::Range;
 use std::panic::AssertUnwindSafe;
 
 /// fts5_api 的版本，要求最低版本不能低于 3
@@ -96,7 +97,7 @@ pub trait Tokenizer: Sized + Send + 'static {
         push_token: TKF,
     ) -> Result<(), rusqlite::Error>
     where
-        TKF: FnMut(&[u8], std::ops::Range<usize>, bool) -> Result<(), rusqlite::Error>;
+        TKF: FnMut(&[u8], Range<usize>, bool) -> Result<(), rusqlite::Error>;
 }
 
 unsafe extern "C" fn x_create<T: Tokenizer>(
@@ -186,17 +187,15 @@ unsafe extern "C" fn x_tokenize<T: Tokenizer>(
 
     let push_token = push_token.expect("No provide push token function");
     let push_token = |token: &[u8],
-                      range: std::ops::Range<usize>,
+                      Range { start, end }: Range<usize>,
                       colocated: bool|
      -> Result<(), rusqlite::Error> {
         let token_len: c_int = token.len().try_into().expect("Token is too long");
         assert!(
-            range.start <= data.len() && range.end <= data.len(),
-            "Token range is invalid. Range is {range:?}, data length is {}",
+            start <= data.len() && end <= data.len(),
+            "Token range is invalid. Range is [{start}..{end}], data length is {}",
             data.len(),
         );
-        let start = range.start as c_int;
-        let end = range.end as c_int;
         let flags = if colocated { FTS5_TOKEN_COLOCATED } else { 0 };
 
         let res = unsafe {
@@ -205,8 +204,8 @@ unsafe extern "C" fn x_tokenize<T: Tokenizer>(
                 flags,
                 token.as_ptr().cast::<c_char>(),
                 token_len,
-                start,
-                end,
+                start as c_int,
+                end as c_int,
             )
         };
         if res == SQLITE_OK {
