@@ -123,7 +123,7 @@ impl Tokenizer for SimpleTokenizer {
         for (index, word) in text.unicode_word_indices() {
             let range = index..index + word.len();
             if need_pinyin(word) && self.enable_pinyin && reason == TokenizeReason::Document {
-                if STOPWORD.contains(word) {
+                if self.enable_stopword && STOPWORD.contains(word) {
                     // 不处理停词
                     continue;
                 }
