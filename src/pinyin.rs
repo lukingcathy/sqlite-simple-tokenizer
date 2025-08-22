@@ -29,7 +29,7 @@ pub fn get_pinyin(ch: &char) -> Option<Vec<String>> {
 /// - `zhangliangying` 得到  `{"zhangliangying", "zhang+li+ang+yin+g", "zhang+li+ang+ying", "zhang+liang+yin+g", "zhang+liang+ying", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
 /// - `zhangliangy` 得到  `{"zhangliangy", "zhang+li+ang+y", "zhang+liang+y", "z+h+a+n+g+l+i+a+n+g+y+i+n+g"}`
 pub fn split_pinyin(input: &str) -> BTreeSet<String> {
-    let len = input.len();
+    let len = input.chars().count();
     const MAX_LEN: usize = 20;
     if len <= 1 || len > MAX_LEN {
         return BTreeSet::from([input.to_owned()]);
