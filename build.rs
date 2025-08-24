@@ -1,25 +1,51 @@
-use phf::phf_map;
+use std::collections::{BTreeSet, HashMap};
 use std::env;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
+use std::sync::LazyLock;
 
 static DEFAULT_PINYIN_DATA: &str = include_str!("data/pinyin.txt");
 
 static DEFAULT_STOPWORD: &str = include_str!("data/stopword.txt");
 
 /// 带声调的韵母和和不带声调的韵母的映射
-static TONE_TO_PLAIN: phf::Map<char, char> = phf_map! {
-    'ā'=>'a', 'á'=>'a', 'ǎ'=>'a', 'à'=>'a',
-    'ē'=>'e', 'é'=>'e', 'ě'=>'e', 'è'=>'e', 'ế'=>'e', 'ề'=>'e', 'ê'=>'e',
-    'ō'=>'o', 'ó'=>'o', 'ǒ'=>'o', 'ò'=>'o',
-    'ī'=>'i', 'í'=>'i', 'ǐ'=>'i', 'ì'=>'i',
-    'ū'=>'u', 'ú'=>'u', 'ǔ'=>'u', 'ù'=>'u',
-    'ǘ'=>'u', 'ǚ'=>'u', 'ǜ'=>'u', 'ü'=>'u',
-    'ń'=>'n', 'ň'=>'n', 'ǹ'=>'n',
-    'ḿ'=>'m',
-};
+static TONE_TO_PLAIN: LazyLock<HashMap<char, char>> = LazyLock::new(|| {
+    HashMap::from([
+        ('ā', 'a'),
+        ('á', 'a'),
+        ('ǎ', 'a'),
+        ('à', 'a'),
+        ('ē', 'e'),
+        ('é', 'e'),
+        ('ě', 'e'),
+        ('è', 'e'),
+        ('ế', 'e'),
+        ('ề', 'e'),
+        ('ê', 'e'),
+        ('ō', 'o'),
+        ('ó', 'o'),
+        ('ǒ', 'o'),
+        ('ò', 'o'),
+        ('ī', 'i'),
+        ('í', 'i'),
+        ('ǐ', 'i'),
+        ('ì', 'i'),
+        ('ū', 'u'),
+        ('ú', 'u'),
+        ('ǔ', 'u'),
+        ('ù', 'u'),
+        ('ǘ', 'u'),
+        ('ǚ', 'u'),
+        ('ǜ', 'u'),
+        ('ü', 'u'),
+        ('ń', 'n'),
+        ('ň', 'n'),
+        ('ǹ', 'n'),
+        ('ḿ', 'm'),
+    ])
+});
 
 /// 将拼音中带有声调的韵母转换为不带声调的韵母
 fn to_plain(input: &str) -> String {
@@ -33,12 +59,18 @@ fn to_plain(input: &str) -> String {
             }
         })
         .collect::<String>();
-    let mut value = value.split(",").collect::<Vec<_>>();
-    // 排序
-    value.sort();
-    // 去重
-    value.dedup();
-    value.join(",")
+    let values = value.split(",").map(str::trim).collect::<BTreeSet<&str>>();
+    let mut pinyin = "\"".to_owned();
+    let len = values.len() - 1;
+    for (index, value) in values.iter().enumerate() {
+        pinyin.push_str(value);
+        if index != len {
+            pinyin.push(',');
+        }
+    }
+    pinyin.push('"');
+
+    pinyin
 }
 
 fn main() {
@@ -66,7 +98,7 @@ fn main() {
         } else {
             String::default()
         };
-        dirt.entry(codepoint, format!("\"{pinyin}\""));
+        dirt.entry(codepoint, pinyin);
     }
 
     write!(

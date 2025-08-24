@@ -1,9 +1,6 @@
 [workspace]
 resolver = "3"
 
-[workspace.dependencies]
-phf = { version = "0.12", default-features = false, features = ["macros"] }
-
 [workspace.package]
 authors = ["Cathy Luking <cathyluking@foxmail.com>"]
 version = "0.2.0"
@@ -30,7 +27,7 @@ build_extension = ["rusqlite/loadable_extension"]
 
 [dependencies]
 env_logger = "0.11.8"
-phf = { workspace = true }
+phf = { version = "0.12.1", default-features = false, features = ["macros"] }
 log = "0.4.27"
 rusqlite = { version = "0.37.0", default-features = false, features = ["bundled", "functions", "vtab", "array"] }
 unicode-segmentation = "1.12.0"
@@ -39,5 +36,4 @@ jieba-rs = "0.8"
 rust-stemmers = "1.2.0"
 
 [build-dependencies]
-phf = { workspace = true }
-phf_codegen = "0.12"
+phf_codegen = "0.12.1"
