@@ -117,7 +117,7 @@ fn main() {
         if line.is_empty() || line.starts_with("#") {
             continue;
         }
-        stopword.entry(line);
+        stopword.entry(line.trim());
     }
 
     write!(
