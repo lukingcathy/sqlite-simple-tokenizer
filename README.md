@@ -82,6 +82,10 @@ vec.push(row)
 assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
 ```
 
+## 支持的 Rust 最小版本
+
+这个库在维护期间，支持的 Rust 最小版本为当前稳定版本，并积极采用新稳定的一些 Rust 语法和标准库接口。
+
 ## 许可
 
 * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
