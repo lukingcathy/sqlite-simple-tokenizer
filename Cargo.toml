@@ -20,6 +20,7 @@ repository = "https://github.com/lukingcathy/sqlite-simple-tokenizer"
 
 [lib]
 name = "sqlite_simple_tokenizer"
+crate-type = ["cdylib"]
 
 [features]
 defualt = []

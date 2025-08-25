@@ -12,6 +12,26 @@
 
 - `jieba_tokenizer` 对于汉语的处理，是根据 `jieba.rs` 这个库进行词典分词。该分词器的分词处理，在文档查询和文档写入的时候均生效，可以正常使用 `match` 语法进行查询。
 
+## 支持的 Rust 最小版本
+
+这个库在维护期间，支持的 Rust 最小版本均为当前稳定版本。并且，这个库会积极采用新稳定的一些 Rust 语法和标准库接口。
+
+## 支持的 SQLite 版本
+
+这个库基于 `rusqlite 0.37.0` 上构建，目前支持的 SQLite 版本为 `3.50.4`。在较低版本的 SQLite 上，将无法加载此拓展。如果作为 Rust crate 使用，推荐开启 `rusqlite` 的 `bundled` 功能，使用 `rusqlite` 内置的 SQLite，减小版本不匹配而出问题的可能性。
+
+## 将这个库构建为动态库
+
+- 安装 Rust 工具链
+
+- 使用 `cargo` 进行构建
+
+  ```shell
+  cargo build --release --features build_extension
+  ```
+
+- 在 `sqlite` 中使用 `.load libsqlite_simple_tokenizer` 进行加载
+
 ## Tokenizer 基本配置和 `simple_query` 示例
 
 ```sqlite
@@ -61,7 +81,7 @@ WHERE text MATCH simple_query('国');
 
 ## 在 Rust 使用这个库
 
-在 Rust 中使用这个分词器，需要引入 `rusqlite` 依赖
+在 Rust 中使用这个分词器，需要引入 `rusqlite` 依赖， 使用 `cargo add rusqlite sqlite-simple-tokenizer` 安装依赖
 
 ```rust
 let conn = Connection::open_in_memory().unwrap();
@@ -81,10 +101,6 @@ vec.push(row)
 }
 assert_eq!(["中华人民共和国国歌", "国家"], vec.as_slice());
 ```
-
-## 支持的 Rust 最小版本
-
-这个库在维护期间，支持的 Rust 最小版本为当前稳定版本，并积极采用新稳定的一些 Rust 语法和标准库接口。
 
 ## 许可
 
